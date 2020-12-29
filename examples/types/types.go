@@ -2,6 +2,20 @@ package types
 
 import (
 	"encoding/json"
+	"log"
+
+	"nhooyr.io/websocket"
+
+	"github.com/BOOMfinity-Developers/wshelper"
+)
+
+var (
+	OnErrorHandler = func(c *wshelper.Connection, err error) {
+		log.Fatal(err)
+	}
+	OnCloseHandler = func(c *wshelper.Connection, code websocket.StatusCode, reason string) {
+		log.Printf("The connection (%v) has been closed with code %v and reason %v\n", c.UUID(), code, reason)
+	}
 )
 
 type Message struct {

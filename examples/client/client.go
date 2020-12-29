@@ -15,12 +15,8 @@ func main() {
 	if err != nil {
 		log.Fatal("Something went wrong while connecting to the server: ", err.Error())
 	}
-	conn.OnClose(func(c *wshelper.Connection, code websocket.StatusCode, reason string) {
-		log.Printf("The connection (%v) has been closed with code %v and reason %v\n", c.UUID(), code, reason)
-	})
-	conn.OnError(func(c *wshelper.Connection, err error) {
-		log.Fatal(err)
-	})
+	conn.OnClose(types.OnCloseHandler)
+	conn.OnError(types.OnErrorHandler)
 	conn.OnMessage(func(c *wshelper.Connection, data wshelper.Payload) {
 		var p types.Message
 		err := data.Into(&p)
