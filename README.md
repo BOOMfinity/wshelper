@@ -1,1 +1,1 @@
-todo
+[![CodeFactor](https://www.codefactor.io/repository/github/boomfinity-developers/wshelper/badge?s=9505f3728230d689ec3956b7aa753ab362384139)](https://www.codefactor.io/repository/github/boomfinity-developers/wshelper)
