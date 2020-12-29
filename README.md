@@ -1,4 +1,5 @@
 [![CodeFactor](https://www.codefactor.io/repository/github/boomfinity-developers/wshelper/badge?s=9505f3728230d689ec3956b7aa753ab362384139)](https://www.codefactor.io/repository/github/boomfinity-developers/wshelper)
+[![Go Reference](https://pkg.go.dev/badge/github.com/BOOMfinity-Developers/wshelper.svg)](https://pkg.go.dev/github.com/BOOMfinity-Developers/wshelper)
 
 
 You can find usage example in [this](https://github.com/BOOMfinity-Developers/wshelper/blob/master/examples/) directory.
