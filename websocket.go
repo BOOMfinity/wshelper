@@ -1,3 +1,4 @@
+// Simple tools for nhooyr websockets with intuitive API (in golang)
 package wshelper
 
 import (
