@@ -31,9 +31,9 @@ var (
 	}
 )
 
-type closeHandler func(connection *Connection, code websocket.StatusCode, reason string)
-type errorHandler func(connection *Connection, err error)
-type messageHandler func(connection *Connection, data Payload)
+type CloseHandler func(connection *Connection, code websocket.StatusCode, reason string)
+type ErrorHandler func(connection *Connection, err error)
+type MessageHandler func(connection *Connection, data Payload)
 
 type Payload []byte
 
@@ -48,7 +48,7 @@ type handler struct {
 	conn        *Connection
 	id          uint64
 	synchronous bool
-	run         messageHandler
+	run         MessageHandler
 }
 
 func (h *handler) SetAsync(enabled bool) {
@@ -60,8 +60,8 @@ func (h handler) Delete() {
 }
 
 type Connection struct {
-	onClose   *closeHandler
-	onError   *errorHandler
+	onClose   *CloseHandler
+	onError   *ErrorHandler
 	ws        *websocket.Conn
 	handlers  map[uint64]*handler
 	handlerID *atomic.Uint64
@@ -102,15 +102,15 @@ func (c *Connection) removeHandler(id uint64) {
 	delete(c.handlers, id)
 }
 
-func (c *Connection) OnClose(h closeHandler) {
+func (c *Connection) OnClose(h CloseHandler) {
 	c.onClose = &h
 }
 
-func (c *Connection) OnError(h errorHandler) {
+func (c *Connection) OnError(h ErrorHandler) {
 	c.onError = &h
 }
 
-func (c *Connection) OnMessage(h messageHandler) *handler {
+func (c *Connection) OnMessage(h MessageHandler) *handler {
 	p := new(handler)
 	p.id = c.handlerID.Inc()
 	p.run = h
