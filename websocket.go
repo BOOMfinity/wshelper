@@ -37,7 +37,7 @@ type messageHandler func(connection *Connection, data Payload)
 type Payload []byte
 
 func (p Payload) Into(v interface{}) error {
-	if value := reflect.TypeOf(v); value.Kind() != reflect.Ptr {
+	if reflect.ValueOf(v).Kind() != reflect.Ptr {
 		return errors.New("A destination must be a pointer")
 	}
 	return json.Unmarshal(p, v)
@@ -77,15 +77,22 @@ func (c *Connection) WS() *websocket.Conn {
 }
 
 func (c *Connection) WriteJSON(ctx context.Context, v interface{}) error {
-	data, err := json.Marshal(v)
+	w, err := c.ws.Writer(ctx, websocket.MessageText)
 	if err != nil {
 		return err
 	}
-	return c.ws.Write(ctx, websocket.MessageText, data)
+
+	// instead of json.Marshal it will reuse buffers, as we write directly to Writer
+	err = json.NewEncoder(w).Encode(v)
+	if err != nil {
+		return err
+	}
+
+	return w.Close()
 }
 
-func (c *Connection) Write(ctx context.Context, data []byte) error {
-	return c.ws.Write(ctx, websocket.MessageText, data)
+func (c *Connection) Write(ctx context.Context, typ websocket.MessageType, data []byte) error {
+	return c.ws.Write(ctx, typ, data)
 }
 
 func (c *Connection) removeHandler(id uint64) {
