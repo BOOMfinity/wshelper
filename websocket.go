@@ -113,6 +113,7 @@ func (c *Connection) OnError(h ErrorHandler) {
 func (c *Connection) OnMessage(h MessageHandler) *Handler {
 	p := new(Handler)
 	p.id = c.handlerID.Inc()
+	p.conn = c
 	p.run = h
 	c.mutex.Lock()
 	c.handlers[p.id] = p
