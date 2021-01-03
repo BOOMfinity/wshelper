@@ -44,18 +44,18 @@ func (p Payload) Into(v interface{}) error {
 	return json.Unmarshal(p, v)
 }
 
-type handler struct {
+type Handler struct {
 	conn        *Connection
 	id          uint64
 	synchronous bool
 	run         MessageHandler
 }
 
-func (h *handler) SetAsync(enabled bool) {
+func (h *Handler) SetAsync(enabled bool) {
 	h.synchronous = !enabled
 }
 
-func (h handler) Delete() {
+func (h Handler) Delete() {
 	h.conn.removeHandler(h.id)
 }
 
@@ -63,7 +63,7 @@ type Connection struct {
 	onClose   *CloseHandler
 	onError   *ErrorHandler
 	ws        *websocket.Conn
-	handlers  map[uint64]*handler
+	handlers  map[uint64]*Handler
 	handlerID *atomic.Uint64
 	mutex     sync.Mutex
 	uuid      string
@@ -110,8 +110,8 @@ func (c *Connection) OnError(h ErrorHandler) {
 	c.onError = &h
 }
 
-func (c *Connection) OnMessage(h MessageHandler) *handler {
-	p := new(handler)
+func (c *Connection) OnMessage(h MessageHandler) *Handler {
+	p := new(Handler)
 	p.id = c.handlerID.Inc()
 	p.run = h
 	c.mutex.Lock()
@@ -149,7 +149,7 @@ func (c *Connection) loop() {
 func NewConnection(conn *websocket.Conn) *Connection {
 	c := &Connection{
 		ws:        conn,
-		handlers:  make(map[uint64]*handler),
+		handlers:  make(map[uint64]*Handler),
 		handlerID: atomic.NewUint64(0),
 		uuid:      ksuid.New().String(),
 	}
