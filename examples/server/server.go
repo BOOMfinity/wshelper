@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"nhooyr.io/websocket"
 
 	"github.com/BOOMfinity-Developers/wshelper"
 	"github.com/BOOMfinity-Developers/wshelper/examples/types"
@@ -21,7 +22,7 @@ func main() {
 		}
 		conn.OnClose(types.OnCloseHandler)
 		conn.OnError(types.OnErrorHandler)
-		conn.OnMessage(func(c *wshelper.Connection, data wshelper.Payload) {
+		conn.OnMessage(func(c *wshelper.Connection, mtype websocket.MessageType, data wshelper.Payload) {
 			var p types.Message
 			err := data.Into(&p)
 			if err != nil {
