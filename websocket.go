@@ -91,8 +91,8 @@ func (h Handler) check() (ok bool) {
 }
 
 type Connection struct {
-	onClose   *CloseHandler
-	onError   *ErrorHandler
+	onClose   CloseHandler
+	onError   ErrorHandler
 	ws        *websocket.Conn
 	handlers  map[uint64]*Handler
 	handlerID *atomic.Uint64
@@ -146,11 +146,11 @@ func (c *Connection) removeHandler(id uint64) {
 }
 
 func (c *Connection) OnClose(h CloseHandler) {
-	c.onClose = &h
+	c.onClose = h
 }
 
 func (c *Connection) OnError(h ErrorHandler) {
-	c.onError = &h
+	c.onError = h
 }
 
 func (c *Connection) newHandler() *Handler {
@@ -184,17 +184,19 @@ func (c *Connection) loop() {
 		if err != nil {
 			var closeErr websocket.CloseError
 			if errors.As(err, &closeErr) && c.onClose != nil {
-				(*c.onClose)(c, closeErr.Code, closeErr.Reason)
+				c.onClose(c, closeErr.Code, closeErr.Reason)
+				c.closed = true
+				break
+			}
+			if strings.Contains(err.Error(), "failed to read frame header: EOF") {
+				if c.onClose != nil {
+					c.onClose(c, websocket.StatusAbnormalClosure, "the connection was suddenly closed")
+				}
 				c.closed = true
 				break
 			}
 			if c.onError != nil {
-				if strings.Contains(err.Error(), "failed to read frame header: EOF") {
-					(*c.onClose)(c, websocket.StatusAbnormalClosure, "the connection was suddenly closed")
-					c.closed = true
-					break
-				}
-				(*c.onError)(c, err)
+				c.onError(c, err)
 			}
 			continue
 		}
@@ -216,6 +218,8 @@ func NewConnection(conn *websocket.Conn) *Connection {
 		handlers:  make(map[uint64]*Handler),
 		handlerID: atomic.NewUint64(0),
 		uuid:      ksuid.New().String(),
+		onClose:   nil,
+		onError:   nil,
 	}
 	go c.loop()
 	return c
