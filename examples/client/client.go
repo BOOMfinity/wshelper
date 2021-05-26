@@ -34,9 +34,9 @@ func main() {
 			}
 			log.Println("I received a message from the server. Connection UUID: ", c.UUID())
 			log.Println(hello.Message)
-			println()
-			log.Println("Closing connection")
-			conn.WS().Close(websocket.StatusNormalClosure, "why not")
+			//println()
+			//log.Println("Closing connection")
+			//conn.WS().Close(websocket.StatusNormalClosure, "why not")
 			break
 		}
 	})

@@ -14,7 +14,7 @@ var (
 		log.Fatal(err)
 	}
 	OnCloseHandler = func(c *wshelper.Connection, code websocket.StatusCode, reason string) {
-		log.Printf("The connection (%v) has been closed with code %v and reason %v\n", c.UUID(), code, reason)
+		log.Printf("The connection '%v' has been closed with code '%v' and reason '%v'", c.UUID(), code, reason)
 	}
 )
 

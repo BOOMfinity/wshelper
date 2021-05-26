@@ -8,6 +8,7 @@ import (
 	"errors"
 	"net/http"
 	"reflect"
+	"strings"
 	"sync"
 
 	"github.com/segmentio/ksuid"
@@ -188,6 +189,11 @@ func (c *Connection) loop() {
 				break
 			}
 			if c.onError != nil {
+				if strings.Contains(err.Error(), "failed to read frame header: EOF") {
+					(*c.onClose)(c, websocket.StatusAbnormalClosure, "the connection was suddenly closed")
+					c.closed = true
+					break
+				}
 				(*c.onError)(c, err)
 			}
 			continue
