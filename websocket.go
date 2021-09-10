@@ -198,7 +198,8 @@ func (c *Connection) loop() {
 			if c.onError != nil {
 				c.onError(c, err)
 			}
-			continue
+			_ = c.Close(websocket.StatusAbnormalClosure, "-")
+			break
 		}
 		c.mutex.Lock()
 		for _, h := range c.handlers {
