@@ -12,8 +12,8 @@ import (
 	"sync"
 
 	"github.com/segmentio/ksuid"
+	"github.com/unxcepted/websocket"
 	"go.uber.org/atomic"
-	"nhooyr.io/websocket"
 )
 
 var (

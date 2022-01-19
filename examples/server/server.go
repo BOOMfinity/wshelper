@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"nhooyr.io/websocket"
+	"github.com/unxcepted/websocket"
 
 	"github.com/BOOMfinity-Developers/wshelper"
 	"github.com/BOOMfinity-Developers/wshelper/examples/types"

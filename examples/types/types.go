@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"log"
 
-	"nhooyr.io/websocket"
+	"github.com/unxcepted/websocket"
 
 	"github.com/BOOMfinity-Developers/wshelper"
 )
