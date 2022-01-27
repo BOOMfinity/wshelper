@@ -6,14 +6,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/segmentio/ksuid"
+	"github.com/unxcepted/websocket"
+	"io"
 	"net/http"
 	"reflect"
 	"strings"
-	"sync"
-
-	"github.com/segmentio/ksuid"
-	"github.com/unxcepted/websocket"
-	"go.uber.org/atomic"
 )
 
 var (
@@ -42,6 +40,7 @@ type CloseHandler func(conn *Connection, code websocket.StatusCode, reason strin
 type ErrorHandler func(conn *Connection, err error)
 type MessageHandler func(conn *Connection, mtype websocket.MessageType, data Payload)
 type MessageBufferHandler func(conn *Connection, mtype websocket.MessageType, data *bytes.Buffer)
+type MessageReaderHandler func(conn *Connection, mtype websocket.MessageType, data io.Reader)
 
 type Payload []byte
 
@@ -52,53 +51,14 @@ func (p Payload) Into(v interface{}) error {
 	return json.Unmarshal(p, v)
 }
 
-type Handler struct {
-	conn        *Connection
-	id          uint64
-	synchronous bool
-	run         interface{}
-}
-
-func (h *Handler) SetAsync(enabled bool) {
-	h.synchronous = !enabled
-}
-
-func (h Handler) Delete() {
-	h.conn.removeHandler(h.id)
-}
-
-func (h Handler) exec(mtype websocket.MessageType, data []byte) {
-	switch run := h.run.(type) {
-	case MessageHandler:
-		run(h.conn, mtype, data)
-		break
-	case MessageBufferHandler:
-		run(h.conn, mtype, bytes.NewBuffer(data))
-		break
-	}
-}
-
-func (h Handler) check() (ok bool) {
-	switch h.run.(type) {
-	case MessageHandler:
-		ok = true
-		break
-	case MessageBufferHandler:
-		ok = true
-		break
-	}
-	return
-}
-
 type Connection struct {
-	onClose   CloseHandler
-	onError   ErrorHandler
-	ws        *websocket.Conn
-	handlers  map[uint64]*Handler
-	handlerID *atomic.Uint64
-	mutex     sync.Mutex
-	uuid      string
-	closed    bool
+	onClose CloseHandler
+	onError ErrorHandler
+	ws      *websocket.Conn
+	uuid    string
+	closed  bool
+	handler interface{}
+	rawData *bytes.Buffer
 }
 
 func (c *Connection) UUID() string {
@@ -139,12 +99,6 @@ func (c *Connection) Write(ctx context.Context, typ websocket.MessageType, data 
 	return c.ws.Write(ctx, typ, data)
 }
 
-func (c *Connection) removeHandler(id uint64) {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-	delete(c.handlers, id)
-}
-
 func (c *Connection) OnClose(h CloseHandler) {
 	c.onClose = h
 }
@@ -153,34 +107,25 @@ func (c *Connection) OnError(h ErrorHandler) {
 	c.onError = h
 }
 
-func (c *Connection) newHandler() *Handler {
-	p := new(Handler)
-	p.id = c.handlerID.Inc()
-	p.conn = c
-	c.mutex.Lock()
-	c.handlers[p.id] = p
-	c.mutex.Unlock()
-	return p
+func (c *Connection) OnMessage(h MessageHandler) {
+	c.handler = h
 }
 
-func (c *Connection) OnMessage(h MessageHandler) *Handler {
-	p := c.newHandler()
-	p.run = h
-	return p
+func (c *Connection) OnMessageBuffer(h MessageBufferHandler) {
+	c.handler = h
 }
 
-func (c *Connection) OnMessageBuffer(h MessageBufferHandler) *Handler {
-	p := c.newHandler()
-	p.run = h
-	return p
+func (c *Connection) OnMessageReader(h MessageReaderHandler) {
+	c.handler = h
 }
 
 func (c *Connection) loop() {
 	for {
+		c.rawData.Reset()
 		if c.closed {
 			return
 		}
-		t, data, err := c.ws.Read(context.Background())
+		t, data, err := c.ws.Reader(context.Background())
 		if err != nil {
 			var closeErr websocket.CloseError
 			if errors.As(err, &closeErr) && c.onClose != nil {
@@ -201,26 +146,31 @@ func (c *Connection) loop() {
 			_ = c.Close(websocket.StatusAbnormalClosure, "-")
 			break
 		}
-		c.mutex.Lock()
-		for _, h := range c.handlers {
-			if h.synchronous {
-				h.exec(t, data)
-			} else {
-				go h.exec(t, data)
+		switch h := c.handler.(type) {
+		case MessageHandler:
+			_, err = c.rawData.ReadFrom(data)
+			if err == nil {
+				h(c, t, c.rawData.Bytes())
 			}
+		case MessageBufferHandler:
+			_, err = c.rawData.ReadFrom(data)
+			if err == nil {
+				h(c, t, c.rawData)
+			}
+		case MessageReaderHandler:
+			h(c, t, data)
 		}
-		c.mutex.Unlock()
 	}
 }
 
 func NewConnection(conn *websocket.Conn) *Connection {
 	c := &Connection{
-		ws:        conn,
-		handlers:  make(map[uint64]*Handler),
-		handlerID: atomic.NewUint64(0),
-		uuid:      ksuid.New().String(),
-		onClose:   nil,
-		onError:   nil,
+		ws:      conn,
+		uuid:    ksuid.New().String(),
+		onClose: nil,
+		onError: nil,
+		handler: nil,
+		rawData: new(bytes.Buffer),
 	}
 	go c.loop()
 	return c
