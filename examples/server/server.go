@@ -8,8 +8,8 @@ import (
 
 	"github.com/unxcepted/websocket"
 
-	"github.com/BOOMfinity-Developers/wshelper"
-	"github.com/BOOMfinity-Developers/wshelper/examples/types"
+	"github.com/BOOMfinity/wshelper"
+	"github.com/BOOMfinity/wshelper/examples/types"
 )
 
 func main() {
@@ -18,7 +18,7 @@ func main() {
 		conn, err := wshelper.Accept(w, r, nil)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("Something went wrong while processing your request"))
+			_, _ = w.Write([]byte("Something went wrong while processing your request"))
 			return
 		}
 		conn.OnClose(types.OnCloseHandler)
@@ -40,7 +40,7 @@ func main() {
 				}
 				log.Println("I received a message from the client. Connection UUID: ", c.UUID())
 				log.Println(hello.Message)
-				c.WriteJSON(context.Background(), types.SendData{
+				_ = c.WriteJSON(context.Background(), types.SendData{
 					Op: 1,
 					Data: types.Hello{
 						Message: fmt.Sprintf("Hey client!"),
@@ -52,5 +52,5 @@ func main() {
 		return
 	})
 	log.Println("Listening on :5555")
-	http.ListenAndServe(":5555", mux)
+	log.Fatalln(http.ListenAndServe(":5555", mux))
 }

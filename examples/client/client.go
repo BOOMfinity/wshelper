@@ -6,8 +6,8 @@ import (
 
 	"github.com/unxcepted/websocket"
 
-	"github.com/BOOMfinity-Developers/wshelper"
-	"github.com/BOOMfinity-Developers/wshelper/examples/types"
+	"github.com/BOOMfinity/wshelper"
+	"github.com/BOOMfinity/wshelper/examples/types"
 )
 
 func main() {
@@ -40,7 +40,7 @@ func main() {
 			break
 		}
 	})
-	conn.WriteJSON(context.Background(), types.SendData{
+	_ = conn.WriteJSON(context.Background(), types.SendData{
 		Op: 1,
 		Data: types.Hello{
 			Message: "Hey server!",

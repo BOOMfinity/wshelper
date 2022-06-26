@@ -6,7 +6,7 @@ import (
 
 	"github.com/unxcepted/websocket"
 
-	"github.com/BOOMfinity-Developers/wshelper"
+	"github.com/BOOMfinity/wshelper"
 )
 
 var (
